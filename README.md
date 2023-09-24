@@ -21,3 +21,6 @@ This repo will show basic code examples of a backend with as few libraries or fr
   <li>Database</li>
   <li>Authentication</li>
 </ul>
+
+### TODO
+Authentication
