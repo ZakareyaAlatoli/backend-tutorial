@@ -42,16 +42,48 @@ while True:
     #sending back data to it will be returned, as well as information about its address
 
     print(client_address, " connected")
+    client_data = []
+    buffer_size = 8
     while True:
-        client_data = client_socket.recv(1024)
+        client_buffer = client_socket.recv(buffer_size)
+
         #The loop ensures that as long as the server and client are connected, they
         #will continue to send data each other. recv specifies how many bytes to receive
-        #at one time. usually a power of 2
-        if not client_data: 
-            client_socket.close()
+        #at a time. usually a power of 2
+        if not client_buffer or len(client_buffer) < buffer_size: 
             break
-        #When the client has finished sending us stuff we close the connection
-        print(client_data)
+        #When the client has finished sending us stuff we have the complete message
+        #Be warned that sometimes the last bit of information we are sent is not falsey
+        #meaning you must be able to determine when the client is done sending stuff
+        client_data += client_buffer
+        #The client can send any data to us. It can be completely unintelligible, but
+        #for the API we will be building we will be expecting HTTP requests
+        #So let's parse it as if it was HTML. Enter localhost:3000 into the
+        #URL bar in a browser and you will actually get an HTTP response
+    client_data = bytearray(client_data)
+    client_data = client_data.decode("utf-8")
+    #HTTP messages are meant to be interpreted as plain strings, so we
+    #interpet the raw bytes the client sent into UTF-8 encoded characters
+    
+    client_data = client_data.split('\r\n')
+    #An HTTP request is a string formatted like this:
+    #[VERB] /[endpoint] [HTTP VERSION]
+    #[key]: [value]
+    #[key]: [value]
+    #[key]: [value]
+    #...
+    #The verb corresponds to the HTTP verb (GET, POST, PUT, DELETE, etc.)
+    #The endpoint denotes what resource on our server the client is looking for
+    for line in client_data:
+        print(line)
+    client_socket.sendall(b'HTTP/1.1 200 Nice!\r\n'+
+                          b'Content-Type: text/html\r\n\r\n'+
+                          b'<html><head><title>Test</title></head></html>')
+    #Like a request, an HTTP response is also a string with key-value pairs
+    #separated by newlines
+    client_socket.close()
+        
+
 
 
 

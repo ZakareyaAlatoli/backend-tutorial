@@ -7,6 +7,6 @@ HOST = 'localhost'
 #the host to be connected would probably be something like "api.example.com"
 PORT = 3000              
 #The same port as used by the server
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.connect((HOST, PORT))
-    s.sendall(b'Hello, world')
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect((HOST, PORT))
+client_socket.sendall(b'Hello, world')
