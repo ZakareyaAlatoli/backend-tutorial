@@ -2,6 +2,7 @@
 #tend to be separate. 
 
 import socket
+from random import randint
 #The most basic type of server we can make is with sockets. Sockets are like a mailbox for 
 #your computer. You specify a port number, and any outside computers that want to get data 
 #from our server will specify this computer's address along with the desired port. We can
@@ -81,12 +82,20 @@ while True:
     #Now we will implement our API. We will use the endpoint to determine what
     #the client is asking for
 
-    client_socket.sendall(b'HTTP/1.1 200 Nice!\r\n'
-                          b'Content-Type: application/json'
-                          b'Content-Length: 23'
-                          b'\r\n\r\n'#this separates the body from the headers
-                          b'{"testkey":"testvalue"}'
-                          )
+    top_header = client_data[0]
+    endpoint = top_header.split(' ')[1]
+    #This should gives us something like "/path/to/resource" Now we determine what
+    #message to return based on the requested resource
+    if endpoint == '/randomnumber':
+        message = f'''
+        HTTP/1.1 200 Here\'s your number!\r\n
+        Content-Type: application/json\r\n
+        \r\n\r\n
+        {{"number": "{randint(0,100)}"}}
+        '''
+        #We just send a random number from 0 to 100 as JSON
+        client_socket.sendall(message.encode('utf-8'))
+        #And send the raw bytes
     #Like a request, an HTTP response is also a string with key-value pairs
     #separated by newlines
     #[HTTP VERSION] [status code] [associated message]
@@ -96,7 +105,7 @@ while True:
     #...
     #An optional body may be appended after two empty lines after the key/value pairs 
     #(also known as the headers)
-    #In our example we specified an html page 
+    #It can be anything, like JSON or a an html page
     client_socket.close()
         
 

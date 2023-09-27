@@ -18,6 +18,8 @@ response = server.recv(1024)
 
 body = response.split(b'\r\n\r\n')[-1]
 #We separate the body from the header
+print(body)
 
 json_response = json.loads(body.decode('utf-8'))
-print(json_response['testkey'])
+for key in json_response:
+  print(f"{key}: {json_response[key]}")
