@@ -32,7 +32,7 @@ server_socket.bind((HOST, PORT))
 #ports that are often used for specific functions. Learn more here: 
 #https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
 
-MAX_CONNECTIONS = 1
+MAX_CONNECTIONS = 64
 server_socket.listen(MAX_CONNECTIONS)
 #Now the server will listen for incoming requests with a maximum of 1 client at a time.
 #Obviously in a production app this number will be as high as is feasible
@@ -45,13 +45,22 @@ while True:
     print(client_address, " connected")
     client_data = []
     buffer_size = 1024
+    timeout = False
     while True:
-        client_buffer = client_socket.recv(buffer_size)
+        client_socket.settimeout(3)
+        try:
+            client_buffer = client_socket.recv(buffer_size)
+        except TimeoutError:
+            print("Client timed out")
+            client_socket.sendall(f'HTTP/1.1 400 Empty request\r\n\r\n'.encode('utf-8'))
+            client_socket.close()
+            timeout = True
+            break
         #The loop ensures that as long as the server and client are connected, they
         #will continue to send data each other. recv specifies how many bytes to receive
         #at a time. usually a power of 2 
         client_data += client_buffer
-        if not client_buffer or client_buffer[-4:] == b'\r\n\r\n': 
+        if not client_buffer or client_buffer[-4:] == b'\r\n\r\n' or len(client_buffer) < buffer_size: 
             break
         #When the client has finished sending us stuff we have the complete message
         #WARNING: this code will block if the end of the client request is not caught
@@ -62,6 +71,8 @@ while True:
         #for the API we will be building we will be expecting HTTP requests
         #So let's parse it as if it was HTML. Enter localhost:3000 into the
         #URL bar in a browser and you will actually get an HTTP response
+    if timeout:
+        continue
     client_data = bytearray(client_data)
     client_data = client_data.decode("utf-8")
     #HTTP messages are meant to be interpreted as plain strings, so we
@@ -87,15 +98,19 @@ while True:
     #This should gives us something like "/path/to/resource" Now we determine what
     #message to return based on the requested resource
     if endpoint == '/randomnumber':
-        message = f'''
-        HTTP/1.1 200 Here\'s your number!\r\n
+        message = f'''HTTP/1.1 200 Here\'s your number!\r\n
         Content-Type: application/json\r\n
         \r\n\r\n
         {{"number": "{randint(0,100)}"}}
         '''
         #We just send a random number from 0 to 100 as JSON
-        client_socket.sendall(message.encode('utf-8'))
-        #And send the raw bytes
+    else:
+        message = f'''HTTP/1.1 404 We ain\'t found jack
+        \r\n\r\n
+        '''
+        
+    client_socket.sendall(message.encode('utf-8'))
+    #And send the raw bytes
     #Like a request, an HTTP response is also a string with key-value pairs
     #separated by newlines
     #[HTTP VERSION] [status code] [associated message]
