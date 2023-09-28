@@ -21,6 +21,7 @@ response = response.decode('utf-8')
 header = response.split('\r\n')[0]
 
 if '200' in header:
+  #The header contains the HTTP status code
   body = response.split('\r\n\r\n')[-1]
   json_response = json.loads(body)
   for key in json_response:

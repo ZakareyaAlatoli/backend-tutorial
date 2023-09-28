@@ -94,19 +94,65 @@ while True:
     #the client is asking for
 
     top_header = client_data[0]
-    endpoint = top_header.split(' ')[1]
+    path = top_header.split(' ')[1]
     #This should gives us something like "/path/to/resource" Now we determine what
     #message to return based on the requested resource
+    #Note that the endpoint can also contain query parameters, which are in this format:
+    #/endpoint?queryparam1=value1&queryparam2=value2
+    #A question mark marks the beginning of the query parameters
+    path = path.split('?')
+    endpoint = path[0]
+    querystring = None
+    if len(path) > 1:
+        querystring = path[1]
+    #This checks if a query is present
+    queries = []
+    if querystring:
+        queries = querystring.split('&')
+    #If there are we split them up
+    queryjson = {}
+    for q in queries:
+        key, val = q.split('=')
+        queryjson[key] = val
+
+    #Now we will check the endpoints to see what data we should send back
     if endpoint == '/randomnumber':
-        message = f'''HTTP/1.1 200 Here\'s your number!\r\n
-        Content-Type: application/json\r\n
-        \r\n\r\n
+        message = f'''HTTP/1.1 200 Here\'s your number!
+        Content-Type: application/json
+        
+
         {{"number": "{randint(0,100)}"}}
         '''
         #We just send a random number from 0 to 100 as JSON
+    elif endpoint == '/colors':
+        color1 = 'red'
+        color2 = 'blue'
+        if 'color1' in queryjson:
+            color1 = queryjson['color1']
+        if 'color2' in queryjson:
+            color2 = queryjson['color2']
+
+        message = f'''HTTP/1.1 200 Ooh pretty colors!
+        Content-Type: text/html
+
+        
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <title>Just Two Colors</title>
+            </head>
+            <body>
+                <div style="color:{color1};">Color 1</div>
+                <div style="color:{color2};">Color 2</div>
+            <body>
+        </html>
+        '''
+        #Try visiting "[ipaddress of backend]:[port]/colors?color1=red&color2=green" 
+        #in a web browser to see this response fully rendered
     else:
         message = f'''HTTP/1.1 404 We ain\'t found jack
-        \r\n\r\n
+
+        
         '''
         
     client_socket.sendall(message.encode('utf-8'))
