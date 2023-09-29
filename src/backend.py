@@ -1,8 +1,9 @@
 #In this example we will only have one server, but in production API servers and web servers
 #tend to be separate. 
 
-import socket
+import socket, json, os
 from random import randint
+
 #The most basic type of server we can make is with sockets. Sockets are like a mailbox for 
 #your computer. You specify a port number, and any outside computers that want to get data 
 #from our server will specify this computer's address along with the desired port. We can
@@ -94,7 +95,10 @@ while True:
     #the client is asking for
 
     top_header = client_data[0]
-    path = top_header.split(' ')[1]
+    top_header = top_header.split(' ')
+    httpverb = top_header[0]
+    path = top_header[1]
+
     #This should gives us something like "/path/to/resource" Now we determine what
     #message to return based on the requested resource
     #Note that the endpoint can also contain query parameters, which are in this format:
@@ -114,14 +118,14 @@ while True:
     for q in queries:
         key, val = q.split('=')
         queryjson[key] = val
-
-    #Now we will check the endpoints to see what data we should send back
-    if endpoint == '/randomnumber':
+    message = 'NONE'
+    #Now we will check the combination of http verb and endpoint to see what data we should send back
+    if endpoint == '/api/randomnumber':
         message = f'''HTTP/1.1 200 Here\'s your number!
-        Content-Type: application/json
-        
+        \rContent-Type: application/json
+                
 
-        {{"number": "{randint(0,100)}"}}
+        \r{{"number": "{randint(0,100)}"}}
         '''
         #We just send a random number from 0 to 100 as JSON
     elif endpoint == '/colors':
@@ -133,7 +137,7 @@ while True:
             color2 = queryjson['color2']
 
         message = f'''HTTP/1.1 200 Ooh pretty colors!
-        Content-Type: text/html
+        \rContent-Type: text/html
 
         
         <!DOCTYPE html>
@@ -149,8 +153,44 @@ while True:
         '''
         #Try visiting "[ipaddress of backend]:[port]/colors?color1=red&color2=green" 
         #in a web browser to see this response fully rendered
+    elif endpoint == '/account':
+        if httpverb == 'GET':
+        #Let's just see if a user account with the given first and last name exists
+            if 'fname' in queryjson and 'lname' in queryjson:
+                #There are other ways to pass parameters to a request but we are using the 
+                #URL method here
+                dirname = os.path.dirname(__file__)
+                filename = os.path.join(dirname, '../sample_users.json')
+                with open(filename) as users_db:
+                    #We could replace this with querying a SQL database or the like
+                    userFound = False
+                    for user in json.load(users_db):
+                        if user['fname'] == queryjson['fname'] and user['lname'] == user['lname']:
+                            message = f'''HTTP/1.1 200 User exists
+
+                            
+                            '''
+                            userFound = True
+                            break 
+                    if not userFound:
+                        message = f'''HTTP/1.1 404 User does not exist
+
+                        
+                        '''
+            else:
+                message = f'''HTTP/1.1 400 Bad request
+
+                        
+                '''     
+
+        elif httpverb == 'POST':
+            #TODO: Handle this case
+            message = f'''HTTP/1.1 400 Bad request
+
+            
+            '''
     else:
-        message = f'''HTTP/1.1 404 We ain\'t found jack
+        message = f'''HTTP/1.1 404 We ain\t found nothin
 
         
         '''

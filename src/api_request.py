@@ -9,22 +9,18 @@ PORT = 3000
 #The same port as used by the server
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.connect((HOST, PORT))
-server.sendall(b'GET /randomnumber HTTP/1.1\r\n'
-                      b'Accept: application/json'
-                      b'\r\n\r\n'
-                      )
+server.sendall(
+f'''GET /account?fname=Jack&lname=Hammond HTTP/1.1
+Accept: application/json
+                    
+                      
+'''.encode('utf-8'))
 response = server.recv(1024)
 #We receive the raw response in bytes
+#TODO: Make sure the entire response is received in case it's bigger than 1024 bytes
 
 response = response.decode('utf-8')
 
 header = response.split('\r\n')[0]
 
-if '200' in header:
-  #The header contains the HTTP status code
-  body = response.split('\r\n\r\n')[-1]
-  json_response = json.loads(body)
-  for key in json_response:
-    print(f"{key}: {json_response[key]}")
-else:
-  print(header)
+print(response)
