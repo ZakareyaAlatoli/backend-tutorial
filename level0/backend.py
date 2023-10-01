@@ -160,7 +160,7 @@ while True:
                 #There are other ways to pass parameters to a request but we are using the 
                 #URL method here
                 dirname = os.path.dirname(__file__)
-                filename = os.path.join(dirname, '../sample_users.json')
+                filename = os.path.join(dirname, './sample_users.json')
                 with open(filename) as users_db:
                     #We could replace this with querying a SQL database or the like
                     userFound = False
