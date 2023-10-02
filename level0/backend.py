@@ -79,29 +79,51 @@ while True:
     #HTTP messages are meant to be interpreted as plain strings, so we
     #interpet the raw bytes the client sent into UTF-8 encoded characters
     
-    client_data = client_data.split('\r\n')
-    #An HTTP request is a string formatted like this:
-    #[VERB] /[endpoint] [HTTP VERSION]
+    client_data = client_data.split('\n\n')
+    #HTTP messages split the body from the rest of the message with a blank-line
+    head = client_data[0]
+    body = ''
+    if len(client_data) >= 2:
+        body = client_data[1]
+        #Sometimes the body isn't there so we check for it
+    
+    head = head.split('\n')
+    #The top of the HTTP message contains headers. which contain things like how
+    #long the body is or what kind of data the sender expects to receive back
+    request = head[0]
+    #The top line of a request is formatted like this: 
+    #[VERB] /[path] [HTTP VERSION]
+    headers = {}
+
+    for i in range(1, len(head)):
+        header = head[i].split(':')
+        if len(header) < 2:
+            print(f'Invalid header: "{header}"')
+        else:
+            headers[header[0]] = header[1]
+    #The headers are formatted like this:
     #[key]: [value]
     #[key]: [value]
     #[key]: [value]
     #...
-    #The verb corresponds to the HTTP verb (GET, POST, PUT, DELETE, etc.)
-    #The endpoint denotes what resource on our server the client is looking for
-    for line in client_data:
-        print(line)
 
+    print(request)
+    print('//Headers//')
+    for h in headers:
+        print(f'{h}: [{headers[h]}]')
+    print(f'//Body//\n{body}')
     #Now we will implement our API. We will use the endpoint to determine what
     #the client is asking for
 
-    top_header = client_data[0]
-    top_header = top_header.split(' ')
-    httpverb = top_header[0]
-    path = top_header[1]
-
+    request = request.split(' ')
+    httpverb = request[0]
+    #The HTTP verb (GET, POST, PUT, DELETE, etc.)
+    path = request[1]
     #This should gives us something like "/path/to/resource" Now we determine what
     #message to return based on the requested resource
-    #Note that the endpoint can also contain query parameters, which are in this format:
+    #Note that the path can also contain query parameters, signified by a '?':
+    #The part before the question mark is called the "endpoint"
+    #Example:
     #/endpoint?queryparam1=value1&queryparam2=value2
     #A question mark marks the beginning of the query parameters
     path = path.split('?')
@@ -122,8 +144,7 @@ while True:
     #Now we will check the combination of http verb and endpoint to see what data we should send back
     if endpoint == '/api/randomnumber':
         message = f'''HTTP/1.1 200 Here\'s your number!
-        \rContent-Type: application/json
-                
+        \rContent-Type: application/json     
 
         \r{{"number": "{randint(0,100)}"}}
         '''
@@ -139,7 +160,6 @@ while True:
         message = f'''HTTP/1.1 200 Ooh pretty colors!
         \rContent-Type: text/html
 
-        
         <!DOCTYPE html>
         <html>
             <head>
@@ -157,17 +177,16 @@ while True:
         if httpverb == 'GET':
         #Let's just see if a user account with the given first and last name exists
             if 'fname' in queryjson and 'lname' in queryjson:
-                #There are other ways to pass parameters to a request but we are using the 
-                #URL method here
+                #There are other ways to pass parameters to a request, such as in the body 
+                #but we are using the URL method here
                 dirname = os.path.dirname(__file__)
                 filename = os.path.join(dirname, './sample_users.json')
-                with open(filename) as users_db:
+                with open(filename, 'r') as users_db:
                     #We could replace this with querying a SQL database or the like
                     userFound = False
                     for user in json.load(users_db):
                         if user['fname'] == queryjson['fname'] and user['lname'] == user['lname']:
                             message = f'''HTTP/1.1 200 User exists
-
                             
                             '''
                             userFound = True
@@ -175,37 +194,38 @@ while True:
                     if not userFound:
                         message = f'''HTTP/1.1 404 User does not exist
 
-                        
                         '''
             else:
                 message = f'''HTTP/1.1 400 Bad request
-
-                        
+      
                 '''     
 
         elif httpverb == 'POST':
-            #TODO: Handle this case
+        #Here we add the data the user sent to us
+            if 'fname' in queryjson and 'lname' in queryjson:
+                dirname = os.path.dirname(__file__)
+                filename = os.path.join(dirname, './sample_users.json')
+                userlist = []
+                with open(filename, 'r') as users_db:
+                    userlist = json.load(users_db)
+                    userlist.append({
+                        'fname': queryjson['fname'],
+                        'lname': queryjson['lname']
+                    })
+                    #TODO: Actually check to see if that first/last name combo exists already
+                with open(filename, 'w') as users_db:
+                    json.dump(userlist, users_db)
+
             message = f'''HTTP/1.1 400 Bad request
 
-            
             '''
     else:
         message = f'''HTTP/1.1 404 We ain\t found nothin
 
-        
         '''
         
     client_socket.sendall(message.encode('utf-8'))
     #And send the raw bytes
-    #Like a request, an HTTP response is also a string with key-value pairs
-    #separated by newlines
-    #[HTTP VERSION] [status code] [associated message]
-    #[key]: [value]
-    #[key]: [value]
-    #[key]: [value]
-    #...
-    #An optional body may be appended after two empty lines after the key/value pairs 
-    #(also known as the headers)
     #It can be anything, like JSON or a an html page
     client_socket.close()
         

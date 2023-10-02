@@ -10,10 +10,11 @@ PORT = 3000
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.connect((HOST, PORT))
 server.sendall(
-f'''GET /account?fname=Jack&lname=Hammond HTTP/1.1
-Accept: application/json
-                    
-                      
+f'''GET /account?fname=Zakareya&lname=Alatoli HTTP/1.1
+Content-Type: application/json
+Accept: application/json 
+
+{{"fname: "Zakareya", "lname": "Alatoli"}}
 '''.encode('utf-8'))
 response = server.recv(1024)
 #We receive the raw response in bytes
