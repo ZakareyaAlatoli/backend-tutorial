@@ -72,7 +72,7 @@ while True:
         #for the API we will be building we will be expecting HTTP requests
         #So let's parse it as if it was HTML. Enter localhost:3000 into the
         #URL bar in a browser and you will actually get an HTTP response
-    if timeout:
+    if timeout or not client_data:
         continue
     client_data = bytearray(client_data)
     client_data = client_data.decode("utf-8")
@@ -143,11 +143,11 @@ while True:
     message = 'NONE'
     #Now we will check the combination of http verb and endpoint to see what data we should send back
     if endpoint == '/api/randomnumber':
-        message = f'''HTTP/1.1 200 Here\'s your number!
-        \rContent-Type: application/json     
-
-        \r{{"number": "{randint(0,100)}"}}
-        '''
+        message = \
+        'HTTP/1.1 200 Here\'s your number!\n' + \
+        'Content-Type: application/json\n' + \
+        '\n' + \
+        f'{{"number": "{randint(0,100)}"}}'
         #We just send a random number from 0 to 100 as JSON
     elif endpoint == '/colors':
         color1 = 'red'
@@ -158,7 +158,7 @@ while True:
             color2 = queryjson['color2']
 
         message = f'''HTTP/1.1 200 Ooh pretty colors!
-        \rContent-Type: text/html
+        Content-Type: text/html
 
         <!DOCTYPE html>
         <html>
